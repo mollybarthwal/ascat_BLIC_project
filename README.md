@@ -3,4 +3,6 @@
 - bullet
 - sooo cooool
 - [is_outlier] ()
-[Link text Here]([https://link-url-here.org](https://github.com/mollybarthwal/ascat_BLIC_project/blob/main/is_outlier_script.R)
+[Link text Here](https://github.com/mollybarthwal/ascat_BLIC_project/blob/main/is_outlier_script.R)
+
+
