@@ -1,0 +1,87 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2580
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 ArialMT;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red255\green255\blue255;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c100000\c100000\c100000;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clcbpat3 \clwWidth12000\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+
+\itap2\trowd \taflags4 \trgaph108\trleft-108 \trwWidth12000\trftsWidth3 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth12000\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadb300 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap2\pardeftab720\partightenfactor0
+
+\f0\fs28 \cf0 \expnd0\expndtw0\kerning0
+\
+add_rosner_outlier_info <- function(data) \{\
+  # Add a flag to say the data are not an outlier (to be changed for outliers later on)\
+  data$is_outlier <- FALSE\
+  \
+  for (this_window_size in levels(data$window_size)) \{\
+    print(this_window_size)\
+    all_nraws <- data %>%\
+      filter(window_size == this_window_size) %>%\
+      filter(!is.na(nraw)) %>%\
+      pull(nraw)\
+    \
+    if (length(all_nraws) < 20) \{\
+      next # Skip the test if not enough values\
+    \}\
+    outliers <- rosnerTest(all_nraws, k = 10) %>%\
+      .$all.stats %>%\
+      filter(Outlier) %>%\
+      select(Value, Outlier)\
+    print(outliers)\
+    data <- data %>%\
+      mutate(is_outlier = case_when(\
+        window_size == this_window_size & nraw %in% outliers$Value ~ TRUE,\
+        window_size == this_window_size ~ FALSE,\
+        TRUE ~ is_outlier\
+      ))\
+  \}\
+  \
+  return(data)\
+\}\
+\
+\
+#chr13 GCRT corrected \
+all_segments13GCRT <- read_tsv('./plots_set3/chr13_GCRTcorrected-all_segments.txt.gz',\
+                             col_types = "cfdddddd")\
+all_windows13GCRT <- read_tsv('./plots_set3/chr13_GCRTcorrected-all_windows_results.txt.gz',\
+                            col_types = "cfdddddd")\
+\
+all_windows13GCRT <- add_rosner_outlier_info(all_windows13GCRT)\
+\
+\
+\
+# geom_segment plot of window start and nraw\
+all_windows13GCRT %>% \
+  # filter(window_size == "500000") %>%\
+  ggplot(aes(x = window_start, y = nraw, xend = window_end, yend = nraw)) +\
+  # geom_rect(data = . %>% filter(n_segments == 0),\
+  #           aes(xmin = window_start, xmax = window_start + 1000000, ymin = -Inf, ymax = Inf),\
+  #           fill = "lightgrey") +\
+  # geom_rect(data = . %>% filter(n_segments == 0) %>%\
+  #             mutate(window_end = ifelse(window_end < window_start + 200000, window_start + 00000, window_start)),\
+  #           aes(xmin = window_start, xmax = window_end, ymin = -Inf, ymax = Inf),\
+  #           fill = "lightgrey") +\
+  geom_rect(data = . %>% filter(n_segments == 0),\
+            aes(xmin = window_start, xmax = window_end, ymin = -Inf, ymax = Inf,\
+                fill = "undetected"),\
+            col = "lightgrey") +\
+  geom_segment(data = . %>% filter(is_outlier),\
+               col = "#777777", linewidth = 1, alpha = 1,\
+               arrow = arrow(angle = 90, length = unit(1, "mm"), ends = "both"),\
+               show.legend = F) +\
+  geom_segment(data = . %>% filter(!is_outlier),\
+               aes(col = window_size), linewidth = 1, alpha = 1,\
+               arrow = arrow(angle = 90, length = unit(1, "mm"), ends = "both"),\
+               show.legend = F) +\
+  scale_fill_manual(name = NULL, values = c("undetected" = "lightgrey")) +\
+  labs(x = "Chr 13 GCRT Corrected", y = "Average raw CN value") +\
+  facet_grid(rows = vars(window_size)) +\
+  scale_x_continuous(breaks = as.integer(c(1, 1:6 * 20000000, 133797422)),\
+                     labels = c(1, paste0(1:6 * 20, "Mb"), "133.8Mb")) +\
+  theme_bw() +\
+  theme(legend.position = "top")\nestcell \lastrow\nestrow\cell \lastrow\row}
