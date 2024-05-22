@@ -1,2 +1,5 @@
-#1 Intro 
-how this works 
+# djlksajdals
+## how this works 
+- bullet
+- sooo cooool
+- [is_outlier]
